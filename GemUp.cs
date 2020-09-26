@@ -80,7 +80,7 @@ namespace GemUp
         {
             if (Input.GetKeyState(Keys.Escape)) gemUpCoroutine.Pause();
 
-            if (Input.GetKeyState(Settings.GemUpKey.Value))
+            if (GameController?.Player?.GetComponent<Actor>()?.Animation == AnimationE.Idle)
             {
                 DebugTimer.Restart();
 
@@ -120,7 +120,7 @@ namespace GemUp
         //main
         private IEnumerator GemItUp()
         {
-            if (!Input.GetKeyState(Settings.GemUpKey.Value) || !GameController.Window.IsForeground()) yield break;
+            if (!GameController.Window.IsForeground()) yield break;
  
             yield return TryToGemUp();
             FullWork = true;
