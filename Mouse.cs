@@ -32,7 +32,7 @@ namespace GemUp
         public static extern bool BlockInput(bool fBlockIt);
 
         /// <summary>
-        /// Sets the cursor position relative to the game window.
+        ///     Sets the cursor position relative to the game window.
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
@@ -44,7 +44,7 @@ namespace GemUp
         }
 
         /// <summary>
-        /// Sets the cursor position to the center of a given rectangle relative to the game window
+        ///     Sets the cursor position to the center of a given rectangle relative to the game window
         /// </summary>
         /// <param name="position"></param>
         /// <param name="gameWindow"></param>
@@ -55,7 +55,7 @@ namespace GemUp
         }
 
         /// <summary>
-        /// Retrieves the cursor's position, in screen coordinates.
+        ///     Retrieves the cursor's position, in screen coordinates.
         /// </summary>
         /// <see>See MSDN documentation for further information.</see>
         [DllImport("user32.dll")]
@@ -206,14 +206,12 @@ namespace GemUp
             var step = (float) Math.Sqrt(Vector2.Distance(GetCursorPositionVector(), vec)) * speedMouse / 20;
 
             if (step > 6)
-            {
                 for (var i = 0; i < step; i++)
                 {
                     var vector2 = Vector2.SmoothStep(GetCursorPositionVector(), vec, i / step);
                     SetCursorPos((int) vector2.X, (int) vector2.Y);
                     yield return new WaitTime(1);
                 }
-            }
             else
                 SetCursorPos(vec);
         }
