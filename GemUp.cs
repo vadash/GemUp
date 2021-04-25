@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using ExileCore;
@@ -55,7 +56,10 @@ namespace GemUp
         {
             if (Input.GetKeyState(Keys.Escape)) _gemUpCoroutine.Pause();
 
-            if (GameController?.Player?.GetComponent<Actor>()?.isMoving == false)
+            if (GameController?.Player?.GetComponent<Actor>()?.CurrentAction == null &&
+                GameController?.Player?.GetComponent<Actor>()?.isMoving == false &&
+                !Input.IsKeyDown(Keys.LButton) &&
+                !Input.IsKeyDown(Keys.MButton))
             {
                 _debugTimer.Restart();
 
@@ -124,13 +128,13 @@ namespace GemUp
 
                     if (skillGemText?.ToLower() == "click to level up")
                     {
-                        Mouse.MoveCursorToPosition(vector2);
-                        Mouse.MouseMove();
                         for (var i = 0; i < 100; i++)
                         {
+                            Mouse.MoveCursorToPosition(vector2);
+                            Mouse.MouseMove();
                             yield return _wait3Ms;
                             if (GameController.IngameState.UIHoverElement.GetClientRectCache.Center.Distance(vector2) <
-                                20)
+                                30)
                             {
                                 yield return Mouse.LeftClick();
                                 yield return _toGemUp;
