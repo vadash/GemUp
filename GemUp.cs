@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using ExileCore;
@@ -14,14 +13,12 @@ namespace GemUp
     public class GemUp : BaseSettingsPlugin<GemUpSettings>
     {
         private readonly Stopwatch _debugTimer = Stopwatch.StartNew();
-        private readonly WaitTime _toGemUp = new WaitTime(10);
-        private readonly WaitTime _wait3Ms = new WaitTime(3);
-        private readonly WaitTime _waitForNextTry = new WaitTime(1000);
+        private readonly WaitTime _waitForNextTry = new WaitTime(10000);
         private Vector2 _clickWindowOffset;
-        private WaitTime _workCoroutine;
         private uint _coroutineCounter;
         private bool _fullWork = true;
         private Coroutine _gemUpCoroutine;
+        private readonly Stopwatch _idleWatch = new Stopwatch();
 
         public GemUp()
         {
@@ -34,9 +31,6 @@ namespace GemUp
             Core.ParallelRunner.Run(_gemUpCoroutine);
             _gemUpCoroutine.Pause();
             _debugTimer.Reset();
-            Settings.MouseSpeed.OnValueChanged += (sender, f) => { Mouse.speedMouse = Settings.MouseSpeed.Value; };
-            _workCoroutine = new WaitTime(Settings.ExtraDelay);
-            Settings.ExtraDelay.OnValueChanged += (sender, i) => _workCoroutine = new WaitTime(i);
             return true;
         }
 
@@ -45,21 +39,23 @@ namespace GemUp
             while (true)
             {
                 yield return GemItUp();
-                _coroutineCounter++;
-                _gemUpCoroutine.UpdateTicks(_coroutineCounter);
-                yield return _workCoroutine;
             }
             // ReSharper disable once IteratorNeverReturns
         }
-
+        
         public override Job Tick()
         {
             if (Input.GetKeyState(Keys.Escape)) _gemUpCoroutine.Pause();
 
-            if (GameController?.Player?.GetComponent<Actor>()?.CurrentAction == null &&
-                GameController?.Player?.GetComponent<Actor>()?.isMoving == false &&
-                !Input.IsKeyDown(Keys.LButton) &&
-                !Input.IsKeyDown(Keys.MButton))
+            if (GameController?.Player?.GetComponent<Actor>()?.CurrentAction != null ||
+                GameController?.Player?.GetComponent<Actor>()?.isMoving != false ||
+                Input.IsKeyDown(Keys.LButton) ||
+                Input.IsKeyDown(Keys.MButton))
+            {
+                _idleWatch.Restart();
+            }
+
+            if (_idleWatch.ElapsedMilliseconds > 2000)
             {
                 _debugTimer.Restart();
 
@@ -99,15 +95,15 @@ namespace GemUp
         private IEnumerator GemItUp()
         {
             if (!GameController.Window.IsForeground()) yield break;
-
+            if (GameController.IngameState.IngameUi.InventoryPanel.IsVisible) yield break;
             yield return TryToGemUp();
             _fullWork = true;
         }
 
         private IEnumerator TryToGemUp()
         {
-            var skillGemLevelUps = GameController.Game.IngameState.IngameUi.GetChildAtIndex(4).GetChildAtIndex(1)
-                .GetChildAtIndex(0);
+            var skillGemLevelUps = GameController.Game.IngameState.IngameUi
+                .GetChildAtIndex(4).GetChildAtIndex(1).GetChildAtIndex(0);
             if (skillGemLevelUps == null || !skillGemLevelUps.IsVisible) yield return _waitForNextTry;
 
             var rectangleOfGameWindow = GameController.Window.GetWindowRectangleTimeCache;
@@ -115,30 +111,22 @@ namespace GemUp
             _clickWindowOffset = rectangleOfGameWindow.TopLeft;
 
             if (skillGemLevelUps?.Children != null)
-                foreach (var element in skillGemLevelUps.Children)
+                foreach (var element in skillGemLevelUps.Children.Reverse())
                 {
                     var skillGemButton = element.GetChildAtIndex(1).GetClientRect();
-
                     var skillGemText = element.GetChildAtIndex(3).Text;
                     if (element.GetChildAtIndex(2).IsVisibleLocal) continue;
-
                     var clientRectCenter = skillGemButton.Center;
-
                     var vector2 = clientRectCenter + _clickWindowOffset;
-
                     if (skillGemText?.ToLower() == "click to level up")
                     {
-                        for (var i = 0; i < 100; i++)
+                        Mouse.MoveCursorToPosition(vector2);
+                        Mouse.MouseMove();
+                        yield return new WaitTime(25);
+                        if (GameController.IngameState.UIHoverElement.GetClientRectCache.Center.Distance(vector2) < 30)
                         {
-                            Mouse.MoveCursorToPosition(vector2);
-                            Mouse.MouseMove();
-                            yield return _wait3Ms;
-                            if (GameController.IngameState.UIHoverElement.GetClientRectCache.Center.Distance(vector2) <
-                                30)
-                            {
-                                yield return Mouse.LeftClick();
-                                yield return _toGemUp;
-                            }
+                            yield return Mouse.LeftClick();
+                            yield return new WaitTime(25);                            
                         }
                     }
                 }
