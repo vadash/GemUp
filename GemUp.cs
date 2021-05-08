@@ -88,13 +88,17 @@ namespace GemUp
                     var vector2 = clientRectCenter + _clickWindowOffset;
                     if (skillGemText?.ToLower() == "click to level up")
                     {
-                        Mouse.MoveCursorToPosition(vector2);
-                        Mouse.MouseMove();
-                        yield return new WaitTime(25);
-                        if (GameController.IngameState.UIHoverElement.GetClientRectCache.Center.Distance(vector2) < 30)
+                        for (var i = 0; i < 3; i++)
                         {
-                            yield return Mouse.LeftClick();
-                            yield return new WaitTime(25);                            
+                            Mouse.MoveCursorToPosition(vector2);
+                            Mouse.MouseMove();
+                            if (GameController.IngameState.UIHover.Address > 0 &&
+                                GameController.IngameState.UIHover.Address == element.GetChildAtIndex(1).Address)
+                            {
+                                yield return Mouse.LeftClick();
+                                yield return new WaitTime(25);
+                            }
+                            yield return new WaitTime(25);
                         }
                     }
                 }
