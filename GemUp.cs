@@ -39,11 +39,7 @@ namespace GemUp
         
         private IEnumerator MainWorkCoroutine()
         {
-            while (true)
-            {
-                yield return GemItUp();
-            }
-            // ReSharper disable once IteratorNeverReturns
+            yield return GemItUp();
         }
         
         public override Job Tick()
@@ -90,15 +86,13 @@ namespace GemUp
                     {
                         for (var i = 0; i < 3; i++)
                         {
-                            Mouse.MoveCursorToPosition(vector2);
-                            Mouse.MouseMove();
+                            Input.SetCursorPos(vector2);
+                            yield return new WaitTime(50);
                             if (GameController.IngameState.UIHover.Address > 0 &&
                                 GameController.IngameState.UIHover.Address == element.GetChildAtIndex(1).Address)
                             {
                                 yield return Mouse.LeftClick();
-                                yield return new WaitTime(25);
                             }
-                            yield return new WaitTime(25);
                         }
                     }
                 }
