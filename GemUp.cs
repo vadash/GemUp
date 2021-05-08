@@ -26,13 +26,14 @@ namespace GemUp
         {
             Input.RegisterKey(Keys.Escape);
             Input.RegisterKey(Keys.LButton);
-            Input.RegisterKey(Keys.RButton);
+            Input.RegisterKey(Keys.MButton);
             return true;
         }
 
         private void Start()
         {
-            _gemUpCoroutine = new Coroutine(MainWorkCoroutine(), this, "Gem Up");
+            if (Core.ParallelRunner.FindByName("GemUp") != null) return;
+            _gemUpCoroutine = new Coroutine(MainWorkCoroutine(), this, "GemUp");
             Core.ParallelRunner.Run(_gemUpCoroutine);
         }
         
@@ -54,7 +55,7 @@ namespace GemUp
                 GameController?.Player?.IsDead == true ||
                 GameController?.Player?.GetComponent<Actor>()?.CurrentAction != null ||
                 GameController?.Player?.GetComponent<Actor>()?.isMoving != false ||
-                Input.GetKeyState(Keys.Escape) ||
+                Input.IsKeyDown(Keys.Escape) ||
                 Input.IsKeyDown(Keys.LButton) ||
                 Input.IsKeyDown(Keys.MButton))
             {
