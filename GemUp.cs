@@ -12,11 +12,8 @@ namespace GemUp
 {
     public class GemUp : BaseSettingsPlugin<GemUpSettings>
     {
-        private readonly Stopwatch _debugTimer = Stopwatch.StartNew();
         private readonly WaitTime _waitForNextTry = new WaitTime(10000);
         private Vector2 _clickWindowOffset;
-        private uint _coroutineCounter;
-        private bool _fullWork = true;
         private Coroutine _gemUpCoroutine;
         private readonly Stopwatch _idleWatch = new Stopwatch();
 
@@ -27,13 +24,18 @@ namespace GemUp
 
         public override bool Initialise()
         {
-            _gemUpCoroutine = new Coroutine(MainWorkCoroutine(), this, "Gem Up");
-            Core.ParallelRunner.Run(_gemUpCoroutine);
-            _gemUpCoroutine.Pause();
-            _debugTimer.Reset();
+            Input.RegisterKey(Keys.Escape);
+            Input.RegisterKey(Keys.LButton);
+            Input.RegisterKey(Keys.RButton);
             return true;
         }
 
+        private void Start()
+        {
+            _gemUpCoroutine = new Coroutine(MainWorkCoroutine(), this, "Gem Up");
+            Core.ParallelRunner.Run(_gemUpCoroutine);
+        }
+        
         private IEnumerator MainWorkCoroutine()
         {
             while (true)
@@ -45,62 +47,27 @@ namespace GemUp
         
         public override Job Tick()
         {
-            if (Input.GetKeyState(Keys.Escape)) _gemUpCoroutine.Pause();
+            if (!Settings.Enable) return null;
 
-            if (GameController?.Player?.GetComponent<Actor>()?.CurrentAction != null ||
+            if (!GameController.Window.IsForeground() ||
+                GameController.IngameState.IngameUi.InventoryPanel.IsVisible ||
+                GameController?.Player?.IsDead == true ||
+                GameController?.Player?.GetComponent<Actor>()?.CurrentAction != null ||
                 GameController?.Player?.GetComponent<Actor>()?.isMoving != false ||
+                Input.GetKeyState(Keys.Escape) ||
                 Input.IsKeyDown(Keys.LButton) ||
                 Input.IsKeyDown(Keys.MButton))
             {
                 _idleWatch.Restart();
+                _gemUpCoroutine.Done(true);
+                return null;
             }
 
-            if (_idleWatch.ElapsedMilliseconds > 2000)
-            {
-                _debugTimer.Restart();
-
-                if (_gemUpCoroutine.IsDone)
-                {
-                    var firstOrDefault =
-                        Core.ParallelRunner.Coroutines.FirstOrDefault(x => x.OwnerName == nameof(GemUp));
-
-                    if (firstOrDefault != null)
-                        _gemUpCoroutine = firstOrDefault;
-                }
-
-                _gemUpCoroutine.Resume();
-                _fullWork = false;
-            }
-            else
-            {
-                if (_fullWork)
-                {
-                    _gemUpCoroutine.Pause();
-                    _debugTimer.Reset();
-                }
-            }
-
-            if (_debugTimer.ElapsedMilliseconds > 2000)
-            {
-                _fullWork = true;
-                LogMessage("Error gem up stop after time limit 2000 ms");
-                _debugTimer.Reset();
-            }
-
+            if (_idleWatch.ElapsedMilliseconds > 2500) Start();
             return null;
         }
 
-
-        //main
         private IEnumerator GemItUp()
-        {
-            if (!GameController.Window.IsForeground()) yield break;
-            if (GameController.IngameState.IngameUi.InventoryPanel.IsVisible) yield break;
-            yield return TryToGemUp();
-            _fullWork = true;
-        }
-
-        private IEnumerator TryToGemUp()
         {
             var skillGemLevelUps = GameController.Game.IngameState.IngameUi
                 .GetChildAtIndex(4).GetChildAtIndex(1).GetChildAtIndex(0);
@@ -133,11 +100,6 @@ namespace GemUp
 
             Mouse.MoveCursorToPosition(oldMousePosition);
             yield return _waitForNextTry;
-        }
-
-        public override void OnPluginDestroyForHotReload()
-        {
-            _gemUpCoroutine.Done(true);
         }
     }
 }
