@@ -80,7 +80,6 @@
   <ItemGroup>
     <Compile Include="GemUp.cs" />
     <Compile Include="GemupSettings.cs" />
-    <Compile Include="Mouse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

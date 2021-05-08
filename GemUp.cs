@@ -5,7 +5,6 @@ using System.Windows.Forms;
 using ExileCore;
 using ExileCore.PoEMemory.Components;
 using ExileCore.Shared;
-using ExileCore.Shared.Helpers;
 using SharpDX;
 
 namespace GemUp
@@ -71,7 +70,7 @@ namespace GemUp
             if (skillGemLevelUps == null || !skillGemLevelUps.IsVisible) yield return _waitForNextTry;
 
             var rectangleOfGameWindow = GameController.Window.GetWindowRectangleTimeCache;
-            var oldMousePosition = Mouse.GetCursorPositionVector();
+            var oldMousePosition = Input.ForceMousePosition;
             _clickWindowOffset = rectangleOfGameWindow.TopLeft;
 
             if (skillGemLevelUps?.Children != null)
@@ -80,24 +79,15 @@ namespace GemUp
                     var skillGemButton = element.GetChildAtIndex(1).GetClientRect();
                     var skillGemText = element.GetChildAtIndex(3).Text;
                     if (element.GetChildAtIndex(2).IsVisibleLocal) continue;
-                    var clientRectCenter = skillGemButton.Center;
-                    var vector2 = clientRectCenter + _clickWindowOffset;
                     if (skillGemText?.ToLower() == "click to level up")
                     {
-                        for (var i = 0; i < 3; i++)
-                        {
-                            Input.SetCursorPos(vector2);
-                            yield return new WaitTime(50);
-                            if (GameController.IngameState.UIHover.Address > 0 &&
-                                GameController.IngameState.UIHover.Address == element.GetChildAtIndex(1).Address)
-                            {
-                                yield return Mouse.LeftClick();
-                            }
-                        }
+                        Input.SetCursorPos(skillGemButton.Center + _clickWindowOffset);
+                        Input.Click(MouseButtons.Left);
+                        yield return new WaitTime(50);
                     }
                 }
 
-            Mouse.MoveCursorToPosition(oldMousePosition);
+            Input.SetCursorPos(oldMousePosition);
             yield return _waitForNextTry;
         }
     }
