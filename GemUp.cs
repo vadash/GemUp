@@ -11,7 +11,7 @@ namespace GemUp
 {
     public class GemUp : BaseSettingsPlugin<GemUpSettings>
     {
-        private readonly WaitTime _waitForNextTry = new WaitTime(10000);
+        private readonly WaitTime _waitForNextTry = new WaitTime(4500);
         private Vector2 _clickWindowOffset;
         private Coroutine _gemUpCoroutine;
         private readonly Stopwatch _idleWatch = new Stopwatch();
@@ -60,7 +60,7 @@ namespace GemUp
                 return null;
             }
 
-            if (_idleWatch.ElapsedMilliseconds > 2500) Start();
+            if (_idleWatch.ElapsedMilliseconds > 1500) Start();
             return null;
         }
 
