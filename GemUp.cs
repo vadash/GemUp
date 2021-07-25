@@ -31,10 +31,12 @@ namespace GemUp
 
         private void Start()
         {
-            if (!GameController.Area.CurrentArea.HasWaypoint) return;
-            if (Core.ParallelRunner.FindByName("GemUp") != null) return;
-            _gemUpCoroutine = new Coroutine(MainWorkCoroutine(), this, "GemUp");
-            Core.ParallelRunner.Run(_gemUpCoroutine);
+            if (GameController.Area.CurrentArea.IsHideout)
+            {
+                if (Core.ParallelRunner.FindByName("GemUp") != null) return;
+                _gemUpCoroutine = new Coroutine(MainWorkCoroutine(), this, "GemUp");
+                Core.ParallelRunner.Run(_gemUpCoroutine);                
+            }
         }
         
         private IEnumerator MainWorkCoroutine()
