@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Linq;
@@ -48,21 +49,29 @@ namespace GemUp
         {
             if (!Settings.Enable) return null;
 
-            if (!GameController.Window.IsForeground() ||
-                GameController.IngameState.IngameUi.InventoryPanel.IsVisible ||
-                GameController?.Player?.IsDead == true ||
-                GameController?.Player?.GetComponent<Actor>()?.CurrentAction != null ||
-                GameController?.Player?.GetComponent<Actor>()?.isMoving != false ||
-                Input.IsKeyDown(Keys.Escape) ||
-                Input.IsKeyDown(Keys.LButton) ||
-                Input.IsKeyDown(Keys.MButton))
+            try
             {
-                _idleWatch.Restart();
-                _gemUpCoroutine.Done(true);
-                return null;
+                if (!GameController.Window.IsForeground() ||
+                    GameController.IngameState.IngameUi.InventoryPanel.IsVisible ||
+                    GameController?.Player?.IsDead == true ||
+                    GameController?.Player?.GetComponent<Actor>()?.CurrentAction != null ||
+                    GameController?.Player?.GetComponent<Actor>()?.isMoving != false ||
+                    Input.IsKeyDown(Keys.Escape) ||
+                    Input.IsKeyDown(Keys.LButton) ||
+                    Input.IsKeyDown(Keys.MButton))
+                {
+                    _idleWatch.Restart();
+                    _gemUpCoroutine.Done(true);
+                    return null;
+                }
+
+                if (_idleWatch.ElapsedMilliseconds > 1500) Start();
+            }
+            catch (Exception)
+            {
+                // hide exception
             }
 
-            if (_idleWatch.ElapsedMilliseconds > 1500) Start();
             return null;
         }
 
