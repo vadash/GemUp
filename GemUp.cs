@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Windows.Forms;
 using ExileCore;
-using ExileCore.PoEMemory.Components;
 using ExileCore.Shared;
 using SharpDX;
 
@@ -32,7 +31,7 @@ namespace GemUp
 
         private void Start()
         {
-            if (GameController.Area.CurrentArea.IsHideout)
+            if (GameController.Area.CurrentArea.HasWaypoint)
             {
                 if (Core.ParallelRunner.FindByName("GemUp") != null) return;
                 _gemUpCoroutine = new Coroutine(MainWorkCoroutine(), this, "GemUp");
@@ -54,8 +53,6 @@ namespace GemUp
                 if (!GameController.Window.IsForeground() ||
                     GameController.IngameState.IngameUi.InventoryPanel.IsVisible ||
                     GameController?.Player?.IsDead == true ||
-                    GameController?.Player?.GetComponent<Actor>()?.CurrentAction != null ||
-                    GameController?.Player?.GetComponent<Actor>()?.isMoving != false ||
                     Input.IsKeyDown(Keys.Escape) ||
                     Input.IsKeyDown(Keys.LButton) ||
                     Input.IsKeyDown(Keys.MButton))
@@ -94,6 +91,7 @@ namespace GemUp
                     if (skillGemText?.ToLower() == "click to level up")
                     {
                         Input.SetCursorPos(skillGemButton.Center + _clickWindowOffset);
+                        yield return new WaitTime(50);
                         Input.Click(MouseButtons.Left);
                         yield return new WaitTime(50);
                     }
