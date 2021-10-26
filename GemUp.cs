@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Windows.Forms;
 using ExileCore;
+using ExileCore.PoEMemory.Components;
 using ExileCore.Shared;
 using SharpDX;
 
@@ -50,9 +51,7 @@ namespace GemUp
 
             try
             {
-                if (!GameController.Window.IsForeground() ||
-                    GameController.IngameState.IngameUi.InventoryPanel.IsVisible ||
-                    GameController?.Player?.IsDead == true ||
+                if (GameController.IngameState.IngameUi.InventoryPanel.IsVisible ||
                     Input.IsKeyDown(Keys.Escape) ||
                     Input.IsKeyDown(Keys.LButton) ||
                     Input.IsKeyDown(Keys.MButton))
@@ -74,6 +73,9 @@ namespace GemUp
 
         private IEnumerator GemItUp()
         {
+            if (!GameController.Window.IsForeground()) yield break;
+            if (GameController?.Player?.IsDead == true && GameController?.Player?.GetComponent<Life>()?.CurHP == 0) yield break;
+
             var skillGemLevelUps = GameController.Game.IngameState.IngameUi
                 .GetChildAtIndex(4).GetChildAtIndex(1).GetChildAtIndex(0);
             if (skillGemLevelUps == null || !skillGemLevelUps.IsVisible) yield return _waitForNextTry;
