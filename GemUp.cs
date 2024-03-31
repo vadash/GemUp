@@ -14,11 +14,9 @@ namespace GemUp
 {
     public class GemUp : BaseSettingsPlugin<GemUpSettings>
     {
-        private readonly WaitTime _waitForNextTry = new WaitTime(4500);
-        private Vector2 _clickWindowOffset;
+        private readonly WaitTime _waitForNextTry = new WaitTime(1000);
         private Coroutine _gemUpCoroutine;
         private readonly Stopwatch _idleWatch = new Stopwatch();
-        private bool? _lastOperationStatus = null;
 
         public GemUp()
         {
@@ -66,14 +64,9 @@ namespace GemUp
         {
             if (!GameController.Window.IsForeground()) yield break;
             if (GameController?.Player?.IsDead == true && GameController?.Player?.GetComponent<Life>()?.CurHP == 0) yield break;
-
             var skillGemLevelUps = GameController.Game.IngameState.IngameUi.GetChildAtIndex(4).GetChildAtIndex(1).GetChildAtIndex(0);
             if (skillGemLevelUps == null || !skillGemLevelUps.IsVisible) yield return _waitForNextTry;
-
-            var rectangleOfGameWindow = GameController.Window.GetWindowRectangleTimeCache;
             var oldMousePosition = Input.ForceMousePositionNum;
-            _clickWindowOffset = rectangleOfGameWindow.TopLeft;
-
             if (skillGemLevelUps?.Children != null)
             {
                 foreach (var element in skillGemLevelUps.Children.Reverse())
@@ -83,37 +76,40 @@ namespace GemUp
                     if (element.GetChildAtIndex(2).IsVisibleLocal) continue;
                     if (skillGemText?.ToLower() == "click to level up")
                     {
-                        Input.SetCursorPos(skillGemButton.Center.ToVector2Num() + _clickWindowOffset.ToVector2Num());
-                        yield return HoverCheckForLevelUp(100, 2);
-                        if (_lastOperationStatus == false) break;
-                        Input.Click(MouseButtons.Left);
-                        yield return new WaitTime(1);
-                        if (_lastOperationStatus == false) break;
+                        yield return ClickForLevelUp(skillGemButton, 100, 2);
                     }
                 }
             }
-
             Input.SetCursorPos(oldMousePosition);
             yield return _waitForNextTry;
         }
 
-        private IEnumerator HoverCheckForLevelUp(int maxTimeMs, int extraDelayMs)
+        private IEnumerator ClickForLevelUp(RectangleF skillGemButton, int maxTimeMs, int extraDelayMs)
         {
-            _lastOperationStatus = null;
+            var hits = 0;
             for (int i = 0; i <= maxTimeMs; i++)
             {
+                Input.SetCursorPos(skillGemButton.ClickRandomNum());
+                yield return new WaitTime(1);
                 if (i == maxTimeMs)
                 {
-                    _lastOperationStatus = false;
+                    break;
                 }
                 if (GameController?.IngameState?.UIHover?.PathFromRoot?.ToLower()?.Contains(@"gemlvlup") == true)
                 {
-                    _lastOperationStatus = true;
+                    hits += 2;
+                }
+                else
+                {
+                    if (hits > 0) hits -= 1;
+                }
+                if (hits >= 5)
+                {
+                    Input.Click(MouseButtons.Left);
+                    yield return new WaitTime(extraDelayMs);
                     break;
                 }
-                yield return new WaitTime(1);
             }
-            yield return new WaitTime(extraDelayMs);
         }
 
         public override Job Tick()
@@ -126,7 +122,7 @@ namespace GemUp
                 if (GameController.IngameState.IngameUi.InventoryPanel.IsVisible ||
                     Input.IsKeyDown(Keys.Escape) ||
                     Input.IsKeyDown(Keys.LButton) ||
-                    Input.IsKeyDown(Keys.RButton) ||
+                    //Input.IsKeyDown(Keys.RButton) ||
                     Input.IsKeyDown(Keys.MButton))
                 {
                     _idleWatch.Restart();
@@ -137,7 +133,7 @@ namespace GemUp
 
                 #region wait for high hp
                 var lifeComponet = GameController.Player.GetComponent<Life>();
-                if (lifeComponet?.CurHP < 0.95f * lifeComponet?.MaxHP)
+                if (lifeComponet?.CurHP < 0.90f * lifeComponet?.MaxHP)
                 {
                     _idleWatch.Restart();
                     _gemUpCoroutine.Done(true);
@@ -145,8 +141,8 @@ namespace GemUp
                 }
                 #endregion
 
-                #region wait for no monsters
-                var noMonstersNearby = GameController?.EntityListWrapper?.ValidEntitiesByType[EntityType.Monster]?.All(x => x?.DistancePlayer > 30);
+                #region wait for no monsters nearby
+                var noMonstersNearby = GameController?.EntityListWrapper?.ValidEntitiesByType[EntityType.Monster]?.All(x => x?.DistancePlayer > 15);
                 if (noMonstersNearby == false)
                 {
                     _idleWatch.Restart();
@@ -155,7 +151,7 @@ namespace GemUp
                 }
                 #endregion
 
-                if (_idleWatch.ElapsedMilliseconds > 1500) Start();
+                if (_idleWatch.ElapsedMilliseconds > 1000) Start();
             }
             catch (Exception)
             {
